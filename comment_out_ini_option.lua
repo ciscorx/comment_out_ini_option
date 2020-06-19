@@ -274,7 +274,7 @@ end
 -------------- function definitions section ends here -----------
 
 
-local arg_with_flags = arg_handler(arg, "deh" )
+local arg_with_flags = arg_handler(arg, "deh", {"--help"} )
 
 if not arg_with_flags or arg_with_flags["-h"] or arg_with_flags["--help"] then
    print [[
