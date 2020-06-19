@@ -3,8 +3,14 @@
 --     comment_out_ini_option.lua:
 --      This terminal shell script enables or disables a single
 --       configuration option in a standard ini configuration file.
---       The section heading must be preceeded by the option -h, if
+--       The section heading must be preceeded by the option -s, if
 --       applicable
+--
+--     Authors/maintainers: ciscorx@gmail.com
+--
+--     Commit date: 2020-06-18
+--
+--     License: GNU General Public License v3
 ---------------------------------------------------------------------
 
  
