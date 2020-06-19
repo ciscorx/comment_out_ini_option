@@ -13,7 +13,6 @@
 --     License: GNU General Public License v3
 ---------------------------------------------------------------------
 
- 
 local os = require('os')
 
 local function split(inputstr, sep) 
@@ -188,6 +187,12 @@ local function arg_handler ( tblArg , strSingle_character_argless_switches, tblA
 	       end
 	       
 		  latestflag_starting_arg = k +1
+            elseif k == #arg then
+	       if last_flag_was_argless == false then  -- tie the last args with last flag
+		  flags[latestflag] = tblSlice_to_string(tblArg,latestflag_starting_arg,k-1)
+	       end
+	       
+	       flags[v] = true
 	    else   -- current flag is not argless
 	       if last_flag_was_argless == false then  -- tie the last args with last flag
 		  flags[latestflag] = tblSlice_to_string(tblArg,latestflag_starting_arg,k-1)
@@ -221,6 +226,8 @@ local function arg_handler ( tblArg , strSingle_character_argless_switches, tblA
 		  end
 	       end
 	       
+            elseif k == #arg then
+	       flags[v] = true
 	    else      -- current flag is not argless
 
 	       
@@ -266,7 +273,7 @@ local function arg_handler ( tblArg , strSingle_character_argless_switches, tblA
 	    end
 	 end
       end
-   end
+   end    -- for loop ends here
    flags["number_of_options_passed"]= number_of_options_passed
    return flags
 end
@@ -274,7 +281,7 @@ end
 -------------- function definitions section ends here -----------
 
 
-local arg_with_flags = arg_handler(arg, "deh", {"--help"} )
+local arg_with_flags = arg_handler(arg, "deh")
 
 if not arg_with_flags or arg_with_flags["-h"] or arg_with_flags["--help"] then
    print [[
