@@ -8,11 +8,13 @@
 --
 --     Authors/maintainers: ciscorx@gmail.com
 --
---     Commit date: 2020-06-18
+--     Version: 1
+--     Commit date: 2020-06-23
 --
 --     License: GNU General Public License v3
 ---------------------------------------------------------------------
 
+local version = 1
 local os = require('os')
 
 local function split(inputstr, sep) 
@@ -52,7 +54,7 @@ local function file_exists_and_can_be_written_to(name)
 end
 
 
--- arg_handler() is a quick and dirty command line argument handler
+-- arg_parser() is a quick and dirty command line argument parser
 -- requiring minimal configuration, unlike the more refined lua
 -- argparse function, and simply spits out a table of options to args,
 -- with all the remaining args that are without options listed under
@@ -71,12 +73,12 @@ end
 -- be associated with it, all the remaining arguments considered
 -- optionless.  Also, any arguments before the first flag are also
 -- considered to be optionless, but listed under the
--- "preceeding_arguments" field.  The third parameter to this function
+-- "preceding_arguments" field.  The third parameter to this function
 -- is a string which is to specify single character option flags that
 -- are not to have spaces between the argument and the option flag.
 -- Certain popular programs like to do this, such as, for example, the
 -- -o option in 7zip, or the -I option for including libraries in gcc.
-local function arg_handler ( tblArg , strSingle_character_argless_switches, tblArgless, strSpaceless_single_character)
+local function arg_parser ( tblArg , strSingle_character_argless_switches, tblArgless, strSpaceless_single_character)
 
    if not tblArg and arg then
       tblArg = arg
@@ -206,7 +208,7 @@ local function arg_handler ( tblArg , strSingle_character_argless_switches, tblA
 	    
 	    latestflag_starting_arg = k +1
 	    
-	 else -- if k > 1 then  -- no latestflag and not first position, but proceeding args
+	 else -- if k > 1 then  -- no latestflag and not first position, but preceding args
 	    if strSingle_character_argless_switches and all_chars_in_str_are_in_set( v:sub(2,-1), argless_single_char_set) or single_char_argless_set  and spaceless_single_char_set[v:sub(2,2)] or argless_set and argless_set[v] then
 	       
 	       
@@ -237,7 +239,7 @@ local function arg_handler ( tblArg , strSingle_character_argless_switches, tblA
 	       last_flag_was_argless = false
 	    end
 	    -- if k > 1 then 
-	    --    flags["proceeding_arguments"]=tblSlice_to_string(tblArg,1,k-1)
+	    --    flags["preceding_arguments"]=tblSlice_to_string(tblArg,1,k-1)
 	    -- end
 		  latestflag_starting_arg = k +1
 	 end
@@ -262,14 +264,14 @@ local function arg_handler ( tblArg , strSingle_character_argless_switches, tblA
 	 
 	    flags["optionless_assuming_last_flag_is_argumentless"] = tblSlice_to_string(tblArg,latestflag_starting_arg,-1)
 	    flags["last_flag_that_may_be_argumentless"] = latestflag
-	    if flags["proceeding_arguments"] then
-	       flags["optionless_assuming_including_proceeding"] = flags["proceeding_arguments"].." "..flags["optionless_assuming_last_flag_is_argumentless"]
-	       flags["optionless_including_proceeding"] = flags["proceeding_arguments"].." "..flags["optionless"]
-	       flags["optionless"] = flags["proceeding_arguments"].." "..flags["optionless"]
+	    if flags["preceding_arguments"] then
+	       flags["optionless_assuming_including_preceding"] = flags["preceding_arguments"].." "..flags["optionless_assuming_last_flag_is_argumentless"]
+	       flags["optionless_including_preceding"] = flags["preceding_arguments"].." "..flags["optionless"]
+	       flags["optionless"] = flags["preceding_arguments"].." "..flags["optionless"]
 	    else
-	       flags["optionless_assuming_including_proceeding"] = flags["optionless_assuming_last_flag_is_argumentless"]
-	       flags["optionless_including_proceeding"] = flags["optionless"]
-	       flags["optionless_including_proceeding"] = flags["optionless"]
+	       flags["optionless_assuming_including_preceding"] = flags["optionless_assuming_last_flag_is_argumentless"]
+	       flags["optionless_including_preceding"] = flags["optionless"]
+	       flags["optionless_including_preceding"] = flags["optionless"]
 	    end
 	 end
       end
@@ -278,21 +280,31 @@ local function arg_handler ( tblArg , strSingle_character_argless_switches, tblA
    return flags
 end
 
+
+
+local function trim(s)
+  return (s:gsub("^%s*(.-)%s*$", "%1"))
+end
+
+
 -------------- function definitions section ends here -----------
 
 
-local arg_with_flags = arg_handler(arg, "deh")
+local arg_with_flags = arg_parser(arg, "cuq")
+if arg_with_flags["-v"] or arg_with_flags["--version"] then
+   print('Version '..version)
+   os.exit()
+end
 
 if not arg_with_flags or arg_with_flags["-h"] or arg_with_flags["--help"] then
    print [[
-Usage: Comments out an option in an ini file, if exists.  Pass the argument -e for enable and -d for comment out.  If there is a section header, it must be proceeded by the -s flag.  The filename must be proceeded with the flag -f.  Use -c to change the comment character from # to something else.  The arguments can follow any order.
+Usage: Comments out an option in an ini file, if exists.  Pass the argument -u for uncomment and -c for comment out.  If there is a section header, it must be preceded by the -s flag.  The filename must be preceded with the flag -f.  Use -x to change the comment character from # to something else.  The arguments can follow any order.
    For example:
-      comment_out_ini_options.lua -f FILE -e dtoverlay=disable-wifi
+      sudo comment_out_ini_options.lua -f /boot/config.txt -u dtoverlay=disable-wifi
 ]]
       os.exit()
 end
 
-local filename = "/tmp/config.txt"
 if arg_with_flags["-f"] then
    if file_exists(arg_with_flags["-f"]) then
       filename = arg_with_flags["-f"]
@@ -300,28 +312,71 @@ if arg_with_flags["-f"] then
       print("File does not exist.")
       os.exit()
    end
-end
-
-local disposition
-local disposition_bool
-if arg_with_flags["-d"] then
-   disposition_bool = false
-elseif arg_with_flags["-e"] then
-   disposition_bool = true
 else
-   print("A disposition option must be present, -e for enable, or -d for disable.\nInclude the section heading after the option -s, if applicable.")
+   print'The arguments must include an ini filename, preceded by the -f flag.'
+   os.exit()
+end
+local comment_char = "#"
+if arg_with_flags["-x"] then
+   comment_char = arg_with_flags["-x"]
+end
+local key_pattern
+local action_uncomment = 1
+local action_comment_out = 2
+local action_query = 3
+local disposition
+if arg_with_flags["-c"] then
+   disposition = action_comment_out
+elseif arg_with_flags["-u"] then
+   disposition = action_uncomment
+elseif arg_with_flags['-q'] then
+   disposition = action_query
+   
+else
+   print("A disposition option must be presented, -u for uncomment out, -c for comment out, or -q for query.\nInclude the section heading after the option -s, if applicable.")
+   os.exit()
+end
+local cfg_txt = arg_with_flags["optionless"]
+if not cfg_txt then
+   if disposition == action_query then
+      print'A query text must be presented, without quotes, as the last arguments.'
+   elseif disposition == action_uncomment then
+      print'The text of the option to be uncommented out must be presented, without quotes, as the last arguments'
+      
+   elseif disposition == action_comment_out then
+      print'The text of the option to be commented out must be presented, without quotes, as the last arguments'
+   end
    os.exit()
 end
 
-local comment_char = "#"
-if arg_with_flags["-c"] then
-   comment_char = arg_with_flags["-c"]
+local key_value_delimiter
+local key
+local value
+local key_value_delimiter_pos = cfg_txt:find"="
+if not key_value_delimiter_pos then
+   key_value_delimiter_pos = cfg_txt:find':'
+   if key_value_delimiter_pos then
+      key_value_delimiter = ":"
+   end
+else
+   key_value_delimiter = '='
 end
+local cfg_pattern
+if key_value_delimiter_pos then
+      key = cfg_txt:sub(1,key_value_delimiter_pos - 1)
+      value = cfg_txt:sub(key_value_delimiter_pos + 1,-1)
+      key = trim(key)
+      value = trim(value)
+      cfg_txt = key..key_value_delimiter..value
+      cfg_pattern = escape_pattern(key).."%s*"..escape_pattern(key_value_delimiter).."%s*"..escape_pattern(value)
+ else
 
-local cfg_txt = arg_with_flags["optionless"]
-local cfg_pattern = escape_pattern(cfg_txt).."%s*"
+    cfg_pattern = escape_pattern(cfg_txt).."%s*"
+end
+local cfg_pattern_trailing_comments =  '[ \t'..escape_pattern(comment_char)..']*'..cfg_pattern.."(%s+"..escape_pattern(comment_char).."+.*)"
+local trailing_comments
+
 local cfg_pattern_contrapositive
-
 local f = assert(io.open(filename, "r"))
 fc = f:read("*all")
 f:close()
@@ -330,16 +385,22 @@ result = split(fc, "\n")
 local heading
 local heading_found_linenum
 local heading_delimiter
+local heading_end_delimiter
 local heading_delimiter_pattern
 local linenum_to_start_search = 1
 local new_result ={}
 if arg_with_flags["-s"] then
    heading=arg_with_flags["-s"]
-   if heading:sub(1,1) ~= "[" and heading:sub(1,1) ~= "{" then
+   local possible_heading_delimiter = heading:sub(1,1)
+   local recognized_as_heading_delimiter = { ['{']='}', ['[']=']', ['<']='>', ['(']=')' }
+   if not recognized_as_heading_delimiter[possible_heading_delimiter] then
       heading_delimiter = "["
+      heading_end_delimiter = "]"
       heading="["..heading.."]"
    else
-      heading_delimiter = heading:sub(1,1)  -- heading_delimiter can only be 1 character in length 
+      heading_delimiter = possible_heading_delimiter  -- heading_delimiter can only be 1 character in length
+      heading_end_delimiter = recognized_as_heading_delimiter[heading_delimiter]
+      
    end
    heading_delimiter_pattern =  "%s*"..escape_pattern(heading_delimiter).."%s*"
 
@@ -361,23 +422,23 @@ if size > 2 and result[size] == "" and result[size-1] == "" then
 end
 
 local line_num_of_option 
-if disposition_bool == true then    -- enabling or adding option
+if disposition == action_uncomment then    -- enabling or adding option
    cfg_pattern_contrapositive =  "^%s*"..cfg_pattern
-   cfg_pattern =  "^%s*"..comment_char.."+%s*"..cfg_pattern
-   
-
+   cfg_pattern =  "^%s*"..escape_pattern(comment_char).."+%s*"..cfg_pattern
    if heading then 
       for k,v in ipairs(result) do
       
 	 if k >= linenum_to_start_search then
 	    if v:match(cfg_pattern) and #v>1 and not v:match(heading_delimiter_pattern) then
-	       result[k]=cfg_txt
+	       trailing_comments=v:match(cfg_pattern_trailing_comments)
 	       line_num_of_option = k
+	       
 	    elseif #v>1 and v:match(heading_delimiter_pattern) then
 	       line_num_of_heading_end_delimiter = k
+	       
 	       break
 	    elseif v:match(cfg_pattern_contrapositive) then
-	       print'option already enabled'
+	       print('Line '..k..' option is already not commented out.')
 	       os.exit()
 	       
 	    end
@@ -386,6 +447,7 @@ if disposition_bool == true then    -- enabling or adding option
       if not line_num_of_option and not heading_found_linenum then
 	 table.insert(result, heading)
 	 table.insert(result, cfg_txt)
+	 print('Line '..#result..' option is now added, along with new section heading.')
       elseif not line_num_of_option and heading_found_linenum then
 	 for k,v in ipairs(result) do
 	    table.insert(new_result, v)
@@ -394,30 +456,43 @@ if disposition_bool == true then    -- enabling or adding option
 	    end
 	 end
 	 result = new_result
+	 local new_heading_found_linenum = heading_found_linenum + 1
+	 print('Line '..new_heading_found_linenum..' option is now added.')
       else  -- line_num_of_option and heading_found_linenum
-	 result[line_num_of_option] = cfg_txt
+	 if trailing_comments then
+	    result[line_num_of_option] = cfg_txt .. trailing_comments
+	 else
+	    result[line_num_of_option] = cfg_txt
+	 end
+	 print('Line '..line_num_of_option..' option is no longer commented out.')
       end
 		
    else  -- no heading, enable or adding option
       for k,v in ipairs(result) do
 	 if v:match(cfg_pattern) then
 	    line_num_of_option = k
+	    trailing_comments=v:match(cfg_pattern_trailing_comments)
 	    break
 
 	 elseif v:match(cfg_pattern_contrapositive) then
-	    print'option already enabled'
+	    print('Line '..k..' option is already not commented out.')
 	    os.exit()
 	 end	       
       end
       if not line_num_of_option then
 	 table.insert(result, cfg_txt)
+	 print('Line '..#result..' is now added.')
       else
-	 result[line_num_of_option] = cfg_txt
-	 
+	 if trailing_comments then
+	    result[line_num_of_option] = cfg_txt..trailing_comments
+	 else
+	    result[line_num_of_option] = cfg_txt
+	 end
+	 print('Line '..line_num_of_option..' is no longer commented out.')
       end
    end
      
-else
+elseif disposition == action_comment_out then
    -- commenting out option
 
    cfg_pattern_contrapositive =  "^%s*"..comment_char.."+%s*"..cfg_pattern
@@ -426,41 +501,100 @@ else
       for k,v in ipairs(result) do
 	 if k > heading_found_linenum then
 	    if v:match(heading_delimiter_pattern) then
-	       print'no such line exists to disable'
+	       print'No such line exists to comment out.'
 	       os.exit()
 	    end
 	    if v:match(cfg_pattern) then
-	       result[k]=comment_char..cfg_txt
+	       trailing_comments=v:match(cfg_pattern_trailing_comments)
+	       if trailing_comments then
+		  result[k]=comment_char..cfg_txt..trailing_comments
+	       else
+		  result[k]=comment_char..cfg_txt
+	       end
 	       line_num_of_option = k
 	       break
 	    elseif v:match(cfg_pattern_contrapositive) then
-	       print'option already disabled'
+	       print('Line '..k..' option is already commented out.')
 	       os.exit()
 	    end
 	    
 	 end
       end
    elseif heading and not heading_found_linenum then
-      print'Section heading not found; nothing to disable'
+      print'Section heading not found; nothing to comment out.'
       os.exit()
    else  -- no section heading
       for k,v in ipairs(result) do
 	 if v:match(cfg_pattern) then
-	    result[k]=comment_char..cfg_txt
+	    trailing_comments=v:match(cfg_pattern_trailing_comments)
+	    if trailing_comments then
+	       result[k]=comment_char..cfg_txt..trailing_comments
+	    else
+	       
+	       result[k]=comment_char..cfg_txt
+	    end
 	    line_num_of_option = k
+	    
 	    break
 	 elseif v:match(cfg_pattern_contrapositive) then
-	    print'option already disabled'
+	    print('Line '..k..' option is already commented out.')
 	    os.exit()
 	 end
       end
-	 
+
+      
    end
    
    if not line_num_of_option then
-      print'no such option exists to disable'
+      print'No such option exists to comment out.'
       os.exit()
+   else
+      print('Line '..line_num_of_option..' option is now commented out')
    end
+elseif disposition == action_query then
+   key_pattern = '[ \t'..escape_pattern(comment_char)..']*'..escape_pattern(cfg_txt)
+   local line_nums_of_options = {}      
+   if heading and heading_found_linenum then
+      for k,v in ipairs(result) do
+	 if k > heading_found_linenum then
+	    if v:match(heading_delimiter_pattern) then
+	       if #line_nums_of_options == 0 then
+		  print'no such key exists'
+		  os.exit()
+	       else
+		  break
+	       end
+	    end
+	    if v:match(key_pattern) then
+	       table.insert(line_nums_of_options,k)
+	    end
+	    
+	 end
+      end
+   elseif heading and not heading_found_linenum then
+      print'Section heading not found'
+      os.exit()
+   else  -- no section heading
+      for k,v in ipairs(result) do
+	 if v:match(key_pattern) then
+	    table.insert(line_nums_of_options,k)
+	 end
+      end
+   end
+   if #line_nums_of_options ~= 0 then
+      for k,v in ipairs(line_nums_of_options) do
+	 print(result[v])
+	 if string.match( result[v], "^%s*"..escape_pattern(comment_char).."+%s*") then
+	    print('Line '..v..' option is commented out')
+	 else
+	    print('Line '..v..' option is not commented out')
+	 end
+      end
+   else
+      print'Nothing not found.'
+   end
+   os.exit()
+			    
 end
 
 local f = assert(io.open(filename, "w"))
