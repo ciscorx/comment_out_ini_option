@@ -68,11 +68,11 @@ end
 -- unless the argumentless option happens to be the last argument
 -- passed, in which case its assumed to be argless.  Also, if argless
 -- options are not specified in the parameters then they are to be
--- assumed, if multiple options appear consecutively in the command
--- line string.  The last option flag will only allow one argument to
--- be associated with it, all the remaining arguments considered
--- optionless.  Also, any arguments before the first flag are also
--- considered to be optionless, but listed under the
+-- assumed, in the event that multiple options appear consecutively in
+-- the command line string.  The last option flag will only allow one
+-- argument to be associated with it, all the remaining arguments
+-- considered optionless.  Also, any arguments before the first flag
+-- are also considered to be optionless, but listed under the
 -- "preceding_arguments" field.  The third parameter to this function
 -- is a string which is to specify single character option flags that
 -- are not to have spaces between the argument and the option flag.
@@ -298,9 +298,11 @@ end
 
 if not arg_with_flags or arg_with_flags["-h"] or arg_with_flags["--help"] then
    print [[
-Usage: Comments out an option in an ini file, if exists.  Pass the argument -u for uncomment and -c for comment out.  If there is a section header, it must be preceded by the -s flag.  The filename must be preceded with the flag -f.  Use -x to change the comment character from # to something else.  The arguments can follow any order.
-   For example:
-      sudo comment_out_ini_options.lua -f /boot/config.txt -u dtoverlay=disable-wifi
+Usage: Comments out an option in an ini file, if exists.  Pass the argument -u for uncomment and -c for comment out.  If there is a section header, it must be preceded by the -s flag.  The filename must be preceded with the flag -f.  Use -x to change the comment character from # to something else.  The arguments can follow any order.  Any spaces or parenthesis in the target text must be escaped.
+   For examples:
+      sudo comment_out_ini_option.lua -f /boot/config.txt -u dtoverlay=disable-wifi
+
+      sudo comment_out_ini_option.lua -f /etc/exports -u /srv\ 192.168.0.0/24\(rw,sync,no_subtree_check\)
 ]]
       os.exit()
 end
