@@ -1,4 +1,4 @@
-#!/usr/bin/luajit
+#!/usr/bin/lua
 --------------------------------------------------------------------
 --     comment_out_ini_option.lua:
 --      This terminal shell script enables or disables a single
@@ -8,8 +8,8 @@
 --
 --     Authors/maintainers: ciscorx@gmail.com
 --
---     Version: 1
---     Commit date: 2020-06-23
+--     Version: 2 
+--     Commit date: 2021-05-31
 --
 --     License: GNU General Public License v3
 ---------------------------------------------------------------------
@@ -440,7 +440,7 @@ if disposition == action_uncomment then    -- enabling or adding option
 	       
 	       break
 	    elseif v:match(cfg_pattern_contrapositive) then
-	       print('Line '..k..' option is already not commented out.')
+	       print('Line '..k..' option in '..filename..' is already not commented out.')
 	       os.exit()
 	       
 	    end
@@ -449,7 +449,7 @@ if disposition == action_uncomment then    -- enabling or adding option
       if not line_num_of_option and not heading_found_linenum then
 	 table.insert(result, heading)
 	 table.insert(result, cfg_txt)
-	 print('Line '..#result..' option is now added, along with new section heading.')
+	 print('Line '..#result..' option in '..filename..' has now been added, along with new section heading '..heading..'.')
       elseif not line_num_of_option and heading_found_linenum then
 	 for k,v in ipairs(result) do
 	    table.insert(new_result, v)
@@ -459,14 +459,14 @@ if disposition == action_uncomment then    -- enabling or adding option
 	 end
 	 result = new_result
 	 local new_heading_found_linenum = heading_found_linenum + 1
-	 print('Line '..new_heading_found_linenum..' option is now added.')
+	 print('Line '..new_heading_found_linenum..' option in '..filename..' has now been added.')
       else  -- line_num_of_option and heading_found_linenum
 	 if trailing_comments then
 	    result[line_num_of_option] = cfg_txt .. trailing_comments
 	 else
 	    result[line_num_of_option] = cfg_txt
 	 end
-	 print('Line '..line_num_of_option..' option is no longer commented out.')
+	 print('Line '..line_num_of_option..' option in '..filename..' is no longer commented out.')
       end
 		
    else  -- no heading, enable or adding option
@@ -477,20 +477,20 @@ if disposition == action_uncomment then    -- enabling or adding option
 	    break
 
 	 elseif v:match(cfg_pattern_contrapositive) then
-	    print('Line '..k..' option is already not commented out.')
+	    print('Line '..k..' option in '..filename..' is already not commented out.')
 	    os.exit()
 	 end	       
       end
       if not line_num_of_option then
 	 table.insert(result, cfg_txt)
-	 print('Line '..#result..' is now added.')
+	 print('Line '..#result..' option in '..filename..' has now been added.')
       else
 	 if trailing_comments then
 	    result[line_num_of_option] = cfg_txt..trailing_comments
 	 else
 	    result[line_num_of_option] = cfg_txt
 	 end
-	 print('Line '..line_num_of_option..' is no longer commented out.')
+	 print('Line '..line_num_of_option..' option in '..filename..' is no longer commented out.')
       end
    end
      
@@ -503,7 +503,7 @@ elseif disposition == action_comment_out then
       for k,v in ipairs(result) do
 	 if k > heading_found_linenum then
 	    if v:match(heading_delimiter_pattern) then
-	       print'No such line exists to comment out.'
+	       print('No such line exists in '..filename..' to comment out.')
 	       os.exit()
 	    end
 	    if v:match(cfg_pattern) then
@@ -516,14 +516,14 @@ elseif disposition == action_comment_out then
 	       line_num_of_option = k
 	       break
 	    elseif v:match(cfg_pattern_contrapositive) then
-	       print('Line '..k..' option is already commented out.')
+	       print('Line '..k..' option in '..filename..' is already commented out.')
 	       os.exit()
 	    end
 	    
 	 end
       end
    elseif heading and not heading_found_linenum then
-      print'Section heading not found; nothing to comment out.'
+      print('Section heading not found in '..filename..'; nothing to comment out.')
       os.exit()
    else  -- no section heading
       for k,v in ipairs(result) do
@@ -539,7 +539,7 @@ elseif disposition == action_comment_out then
 	    
 	    break
 	 elseif v:match(cfg_pattern_contrapositive) then
-	    print('Line '..k..' option is already commented out.')
+	    print('Line '..k..' option in '..filename..' is already commented out.')
 	    os.exit()
 	 end
       end
@@ -548,10 +548,10 @@ elseif disposition == action_comment_out then
    end
    
    if not line_num_of_option then
-      print'No such option exists to comment out.'
+      print('No such option exists in '..filename..' to comment out.')
       os.exit()
    else
-      print('Line '..line_num_of_option..' option is now commented out')
+      print('Line '..line_num_of_option..' option in '..filename..' is now commented out')
    end
 elseif disposition == action_query then
    key_pattern = '[ \t'..escape_pattern(comment_char)..']*'..escape_pattern(cfg_txt)
@@ -561,7 +561,7 @@ elseif disposition == action_query then
 	 if k > heading_found_linenum then
 	    if v:match(heading_delimiter_pattern) then
 	       if #line_nums_of_options == 0 then
-		  print'no such key exists'
+		  print('no such key exists in '..filename..'.')
 		  os.exit()
 	       else
 		  break
@@ -574,7 +574,7 @@ elseif disposition == action_query then
 	 end
       end
    elseif heading and not heading_found_linenum then
-      print'Section heading not found'
+      print('Section heading '..heading..' not found in '..filename..'.')
       os.exit()
    else  -- no section heading
       for k,v in ipairs(result) do
@@ -587,13 +587,13 @@ elseif disposition == action_query then
       for k,v in ipairs(line_nums_of_options) do
 	 print(result[v])
 	 if string.match( result[v], "^%s*"..escape_pattern(comment_char).."+%s*") then
-	    print('Line '..v..' option is commented out')
+	    print('Line '..v..' option in '..filename..' is commented out')
 	 else
-	    print('Line '..v..' option is not commented out')
+	    print('Line '..v..' option in '..filename..' is not commented out')
 	 end
       end
    else
-      print'Nothing not found.'
+      print('Nothing matching found in '..filename..'.')
    end
    os.exit()
 			    
