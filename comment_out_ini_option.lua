@@ -8,8 +8,8 @@
 --
 --     Authors/maintainers: ciscorx@gmail.com
 --
---     Version: 2 
---     Commit date: 2021-05-31
+--     Version: 3 
+--     Commit date: 2021-06-01
 --
 --     License: GNU General Public License v3
 ---------------------------------------------------------------------
@@ -298,11 +298,13 @@ end
 
 if not arg_with_flags or arg_with_flags["-h"] or arg_with_flags["--help"] then
    print [[
-Usage: Comments out an option in an ini file, if exists.  Pass the argument -u for uncomment and -c for comment out.  If there is a section header, it must be preceded by the -s flag.  The filename must be preceded with the flag -f.  Use -x to change the comment character from # to something else.  The arguments can follow any order.  Any spaces or parenthesis in the target text must be escaped, if the argument is not delimited by quotes.
+Usage: Comments out an option in an ini file, if exists.  Pass the argument -u for uncomment and -c for comment out.  If there is a section header, it must be preceded by the -s flag.  The filename must be preceded with the flag -f.  Use -x to change the comment character from # to something else.  The arguments can follow any order.  Any spaces or parenthesis in the target text must be escaped, if the argument is not delimited by quotes.  To add an option, that isnt already present, to a location before the last statement in the ini file, include the following arguments in the following order: --insert-before last-statement
    For examples:
       sudo comment_out_ini_option.lua -f /boot/config.txt -u dtoverlay=disable-wifi
 
       sudo comment_out_ini_option.lua -f /etc/exports -u /srv\ 192.168.0.0/24\(rw,sync,no_subtree_check\)
+
+      sudo comment_out_ini_option.lua --insert-before last-statement -f /etc/rc.local -u pulseaudio -k
 ]]
       os.exit()
 end
@@ -482,8 +484,22 @@ if disposition == action_uncomment then    -- enabling or adding option
 	 end	       
       end
       if not line_num_of_option then
+	 local tmp_result_line_num = #result
+	 if arg_with_flags['--insert-before'] == "last-statement" then
+	    for i = #result,1,-1 do
+	       if not (trim(result[i]) == '') then
+		  local saveline = result[i]
+		  result[i] = cfg_txt
+		  tmp_result_line_num = i
+		  cfg_txt = saveline
+		  print(trim(result[i]))	
+		  
+		  break
+	       end
+	    end
+	 end 
 	 table.insert(result, cfg_txt)
-	 print('Line '..#result..' option in '..filename..' has now been added.')
+	 print('Line '..tmp_result_line_num..' option in '..filename..' has now been added.')
       else
 	 if trailing_comments then
 	    result[line_num_of_option] = cfg_txt..trailing_comments
