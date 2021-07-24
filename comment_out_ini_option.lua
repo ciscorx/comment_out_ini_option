@@ -1,4 +1,4 @@
-#!/usr/bin/lua
+#!/usr/local/bin/luajit
 --------------------------------------------------------------------
 --     comment_out_ini_option.lua:
 --      This terminal shell script enables or disables a single
