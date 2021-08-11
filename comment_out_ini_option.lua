@@ -8,13 +8,13 @@
 --
 --     Authors/maintainers: ciscorx@gmail.com
 --
---     Version: 3 
---     Commit date: 2021-06-01
+--     Version: 4 
+--     Commit date: 2021-08-11
 --
 --     License: GNU General Public License v3
 ---------------------------------------------------------------------
 
-local version = 1
+local version = 4
 local os = require('os')
 
 local function split(inputstr, sep) 
@@ -305,6 +305,8 @@ Usage: Comments out an option in an ini file, if exists.  Pass the argument -u f
       sudo comment_out_ini_option.lua -f /etc/exports -u /srv\ 192.168.0.0/24\(rw,sync,no_subtree_check\)
 
       sudo comment_out_ini_option.lua --insert-before last-statement -f /etc/rc.local -u pulseaudio -k
+
+      sudo comment_out_ini_option.lua -u -f /etc/lightdm.conf -s Seat:* autologin-user=alarm
 ]]
       os.exit()
 end
@@ -408,7 +410,7 @@ if arg_with_flags["-s"] then
    end
    heading_delimiter_pattern =  "%s*"..escape_pattern(heading_delimiter).."%s*"
 
-   local heading_pattern = "%s*"..escape_pattern(heading).."%s*"
+   local heading_pattern = "^%s*"..escape_pattern(heading).."%s*"
    for k,v in ipairs(result) do
       if v:match(heading_pattern) then
 	 heading_found_linenum = k 
